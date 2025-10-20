@@ -1,6 +1,7 @@
 ## 🧱 Xây Dựng Mô Hình File: Ecotrack
 
 ```
+Ai làm phần nào thì vào folder đó tạo nhánh riêng tuyệt đối không làm việc trên nhánh main. 
 Ecotrack/
 ├── 📁 frontend/                 # Giao diện người dùng (app/web)
 │   ├── src/
