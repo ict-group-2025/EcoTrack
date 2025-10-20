@@ -1,5 +1,6 @@
-# EcoTrack
-## Xây Dựng Mô Hình File 📦 
+## 🧱 Xây Dựng Mô Hình File: Ecotrack
+
+```
 Ecotrack/
 ├── 📁 frontend/                 # Giao diện người dùng (app/web)
 │   ├── src/
@@ -55,3 +56,4 @@ Ecotrack/
 ├── CONTRIBUTING.md              # Hướng dẫn commit, branch, PR
 ├── README.md                    # Giới thiệu tổng quan
 └── project_overview.pdf         # Tổng quan nộp/giới thiệu dự án
+```
