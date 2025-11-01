@@ -1,2 +1,3 @@
-temp_K,humidity,pressure,wind_speed,wind_deg,clouds,timestamp,sunrise,sunset,temp_C,datetime
-293.15,91.0,1019,4.91,14,100,1761962279,1761951546,1761992473,20.0,2025-11-01 08:57:59+07:00
+﻿temp_K,humidity,pressure,wind_speed,wind_deg,clouds,sunrise,sunset,time,temp_C
+294.15,87.0,1019,4.89,10,100,1761951546,1761992473,2025-11-01 11:18:10,21.0
+294.15,87.0,1019,4.89,10,100,1761951546,1761992473,2025-11-01 11:18:30,21.0
