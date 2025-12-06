@@ -3,6 +3,7 @@
 #include <Adafruit_BMP280.h>
 #include <Adafruit_AHTX0.h>
 #include <ScioSense_ENS160.h>
+#include "ws_client.h"
 
 // =======================
 // Chân I2C và LED onboard
@@ -14,8 +15,8 @@
 // =======================
 // Cảm biến bụi GP2Y1010AU0F
 // =======================
-#define DUST_LED_PIN 5     // điều khiển LED IR
-#define DUST_ANALOG_PIN 34 // chân đọc tín hiệu ADC
+#define DUST_LED_PIN 27
+#define DUST_ANALOG_PIN 32
 
 // =======================
 // Cảm biến I2C khác
@@ -27,6 +28,10 @@ ScioSense_ENS160 ens160(0x53);
 bool bmp_ready = false;
 bool aht_ready = false;
 bool ens_ready = false;
+
+// Timing control
+unsigned long lastSend = 0;
+const unsigned long SEND_INTERVAL = 5000; // 5 giây
 
 // =======================
 // Quét I2C
@@ -40,70 +45,14 @@ void scanI2C()
     Wire.beginTransmission(i);
     if (Wire.endTransmission() == 0)
     {
-      Serial.print("Tìm thấy thiết bị tại: 0x");
-      if (i < 16)
-        Serial.print("0");
-      Serial.println(i, HEX);
+      Serial.printf("Tìm thấy thiết bị tại: 0x%02X\n", i);
       count++;
     }
+    delay(5); // Delay nhỏ để tránh spam I2C
   }
   if (count == 0)
     Serial.println("❌ Không tìm thấy thiết bị I2C!");
-  else
-  {
-    Serial.print("Tổng số thiết bị: ");
-    Serial.println(count);
-  }
   Serial.println("------------------------\n");
-}
-
-// =======================
-// Khởi tạo
-// =======================
-void setup()
-{
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(DUST_LED_PIN, OUTPUT);
-  digitalWrite(DUST_LED_PIN, HIGH); // tắt LED GP2Y (mức HIGH = off)
-
-  Serial.begin(115200);
-  delay(2000);
-  Serial.println("\n=== ESP32 Test ENS160 + BMP280 + AHT21 + GP2Y ===");
-
-  Wire.begin(SDA_PIN, SCL_PIN);
-  delay(200);
-  scanI2C();
-
-  // BMP280
-  Serial.println("Khởi tạo BMP280...");
-  if (bmp.begin(0x76) || bmp.begin(0x77))
-  {
-    Serial.println("✅ BMP280 sẵn sàng");
-    bmp_ready = true;
-  }
-  else
-    Serial.println("❌ Không tìm thấy BMP280!");
-
-  // AHT21
-  Serial.println("Khởi tạo AHT21...");
-  if (aht.begin())
-  {
-    Serial.println("✅ AHT21 sẵn sàng");
-    aht_ready = true;
-  }
-  else
-    Serial.println("❌ Không tìm thấy AHT21!");
-
-  // ENS160
-  Serial.println("Khởi tạo ENS160...");
-  if (ens160.begin())
-  {
-    ens160.setMode(ENS160_OPMODE_STD);
-    Serial.println("✅ ENS160 sẵn sàng (cần 3 phút để hiệu chuẩn)");
-    ens_ready = true;
-  }
-  else
-    Serial.println("❌ Không tìm thấy ENS160!");
 }
 
 // =======================
@@ -111,66 +60,172 @@ void setup()
 // =======================
 float readDustDensity()
 {
-  digitalWrite(DUST_LED_PIN, LOW); // bật LED IR
+  digitalWrite(DUST_LED_PIN, LOW);
   delayMicroseconds(280);
-  int raw = analogRead(DUST_ANALOG_PIN); // đọc ADC
+  int raw = analogRead(DUST_ANALOG_PIN);
   delayMicroseconds(40);
-  digitalWrite(DUST_LED_PIN, HIGH); // tắt LED
+  digitalWrite(DUST_LED_PIN, HIGH);
   delayMicroseconds(9680);
 
-  float voltage = raw * (3.3 / 4095.0);        // ADC 12-bit
-  float dustDensity = (voltage - 0.9) / 0.005; // công thức từ datasheet
+  float voltage = raw * (3.3 / 4095.0);
+  float dustDensity = (voltage - 0.9) / 0.005;
 
   if (dustDensity < 0)
-    dustDensity = 0; // tránh giá trị âm
+    dustDensity = 0;
   return dustDensity;
 }
 
 // =======================
-// Vòng lặp chính
+// Khởi tạo
+// =======================
+void setup()
+{
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(DUST_LED_PIN, OUTPUT);
+  digitalWrite(DUST_LED_PIN, HIGH);
+
+  Serial.println("\n=== ESP32 Sensors + WebSocket ===");
+  Serial.printf("Free Heap: %d bytes\n", ESP.getFreeHeap());
+
+  // ⚠️ KẾT NỐI WIFI TRƯỚC
+  connectWiFi();
+
+  // Đợi WiFi kết nối xong
+  int wifiRetry = 0;
+  while (WiFi.status() != WL_CONNECTED && wifiRetry < 20)
+  {
+    delay(500);
+    Serial.print(".");
+    wifiRetry++;
+  }
+
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("\n❌ WiFi timeout, restart...");
+    ESP.restart();
+  }
+
+  // SAU ĐÓ MỚI KẾT NỐI WS
+  delay(1000); // Delay trước khi kết nối WS
+  connectWS();
+
+  // Khởi tạo I2C
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(100000); // 100kHz - chậm hơn nhưng ổn định hơn
+  delay(200);
+
+  scanI2C();
+
+  // BMP280
+  if (bmp.begin(0x76) || bmp.begin(0x77))
+  {
+    bmp_ready = true;
+    Serial.println("✅ BMP280 sẵn sàng");
+  }
+  else
+    Serial.println("❌ Không tìm thấy BMP280!");
+
+  // AHT21
+  if (aht.begin())
+  {
+    aht_ready = true;
+    Serial.println("✅ AHT21 sẵn sàng");
+  }
+  else
+    Serial.println("❌ Không tìm thấy AHT21!");
+
+  // ENS160
+  if (ens160.begin())
+  {
+    ens160.setMode(ENS160_OPMODE_STD);
+    ens_ready = true;
+    Serial.println("✅ ENS160 sẵn sàng (cần 3 phút để hiệu chuẩn)");
+  }
+  else
+    Serial.println("❌ Không tìm thấy ENS160!");
+
+  Serial.println("\n🚀 Hệ thống sẵn sàng!");
+  Serial.printf("Free Heap after init: %d bytes\n\n", ESP.getFreeHeap());
+}
+
+// =======================
+// LOOP chính
 // =======================
 void loop()
 {
-  Serial.println("\n-------------------------------------------");
-  Serial.printf("Thời gian: %lus\n", millis() / 1000);
+  // CRITICAL: wsLoop() phải được gọi liên tục
+  wsLoop();
+
+  // Chỉ đọc và gửi dữ liệu mỗi 5 giây
+  if (millis() - lastSend < SEND_INTERVAL)
+  {
+    return; // Thoát sớm, chỉ chạy wsLoop()
+  }
+
+  lastSend = millis();
+
+  // Nhấp nháy LED
+  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+
+  float temp = 0, pressure = 0, altitude = 0;
+  float humidity = 0;
+  int aqi = 0, tvoc = 0, eco2 = 0;
+  float tempAHT = 0;
 
   // BMP280
   if (bmp_ready)
   {
-    Serial.println("--- BMP280 ---");
-    Serial.printf("Nhiệt độ: %.2f°C\n", bmp.readTemperature());
-    Serial.printf("Áp suất: %.2f hPa\n", bmp.readPressure() / 100.0F);
-    Serial.printf("Độ cao: %.2f m\n", bmp.readAltitude(1013.25));
-  }
+    temp = bmp.readTemperature();
+    pressure = bmp.readPressure() / 100.0F;
+    altitude = bmp.readAltitude(1013.25);
+  }  
+  yield(); // Yield sau mỗi cảm biến
 
   // AHT21
   if (aht_ready)
   {
-    sensors_event_t humidity, temp;
-    aht.getEvent(&humidity, &temp);
-    Serial.println("--- AHT21 ---");
-    Serial.printf("Độ ẩm: %.2f%%\n", humidity.relative_humidity);
+    sensors_event_t humi, t;
+    aht.getEvent(&humi, &t);
+    humidity = humi.relative_humidity;
+    tempAHT = t.temperature;
   }
+  yield();
 
   // ENS160
   if (ens_ready && ens160.available())
   {
     ens160.measure(true);
     ens160.measureRaw(true);
-
-    Serial.println("--- ENS160 ---");
-    Serial.printf("AQI: %d\n", ens160.getAQI());
-    Serial.printf("TVOC: %d ppb\n", ens160.getTVOC());
-    Serial.printf("eCO2: %d ppm\n", ens160.geteCO2());
+    aqi = ens160.getAQI();
+    tvoc = ens160.getTVOC();
+    eco2 = ens160.geteCO2();
   }
+  yield();
 
-  // GP2Y1010AU0F
-  Serial.println("--- GP2Y1010AU0F ---");
+  // GP2Y Bụi
   float dust = readDustDensity();
-  Serial.printf("Nồng độ bụi: %.2f mg/m³\n", dust);
+  yield();
 
-  // LED onboard chớp báo hiệu hoạt động
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  // ==============================================
+  // TẠO JSON STRING - Dùng cách hiệu quả hơn
+  // ==============================================
+  char jsonBuffer[256]; // Buffer cố định thay vì String động
+  snprintf(jsonBuffer, sizeof(jsonBuffer),
+           "{\"temp\":%.2f,\"tempAHT\":%.2f,\"pressure\":%.2f,\"altitude\":%.2f,\"humidity\":%.2f,\"aqi\":%d,\"tvoc\":%d,\"eco2\":%d,\"dust\":%.2f}",
+           temp, tempAHT, pressure, altitude, humidity, aqi, tvoc, eco2, dust);
 
-  delay(5000);
+  String json = String(jsonBuffer);
+
+  // IN RA SERIAL ĐỂ DEBUG
+  Serial.println("\n📊 Dữ liệu cảm biến:");
+  Serial.println(json);
+  Serial.printf("Free Heap: %d bytes\n", ESP.getFreeHeap());
+
+  // GỬI LÊN WEBSOCKET
+  sendSensorDataJson(json);
+
+  yield();
 }
