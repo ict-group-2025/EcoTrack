@@ -15,8 +15,8 @@
 // =======================
 // Cảm biến bụi GP2Y1010AU0F
 // =======================
-#define DUST_LED_PIN 5
-#define DUST_ANALOG_PIN 34
+#define DUST_LED_PIN 27
+#define DUST_ANALOG_PIN 32
 
 // =======================
 // Cảm biến I2C khác
@@ -173,6 +173,7 @@ void loop()
   float temp = 0, pressure = 0, altitude = 0;
   float humidity = 0;
   int aqi = 0, tvoc = 0, eco2 = 0;
+  float tempAHT = 0;
 
   // BMP280
   if (bmp_ready)
@@ -180,7 +181,7 @@ void loop()
     temp = bmp.readTemperature();
     pressure = bmp.readPressure() / 100.0F;
     altitude = bmp.readAltitude(1013.25);
-  }
+  }  
   yield(); // Yield sau mỗi cảm biến
 
   // AHT21
@@ -189,6 +190,7 @@ void loop()
     sensors_event_t humi, t;
     aht.getEvent(&humi, &t);
     humidity = humi.relative_humidity;
+    tempAHT = t.temperature;
   }
   yield();
 
@@ -212,8 +214,8 @@ void loop()
   // ==============================================
   char jsonBuffer[256]; // Buffer cố định thay vì String động
   snprintf(jsonBuffer, sizeof(jsonBuffer),
-           "{\"temp\":%.2f,\"pressure\":%.2f,\"altitude\":%.2f,\"humidity\":%.2f,\"aqi\":%d,\"tvoc\":%d,\"eco2\":%d,\"dust\":%.2f}",
-           temp, pressure, altitude, humidity, aqi, tvoc, eco2, dust);
+           "{\"temp\":%.2f,\"tempAHT\":%.2f,\"pressure\":%.2f,\"altitude\":%.2f,\"humidity\":%.2f,\"aqi\":%d,\"tvoc\":%d,\"eco2\":%d,\"dust\":%.2f}",
+           temp, tempAHT, pressure, altitude, humidity, aqi, tvoc, eco2, dust);
 
   String json = String(jsonBuffer);
 
