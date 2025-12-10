@@ -29,7 +29,6 @@ ENSData readENS()
     else if (ens_ready)
     {
         // Giữ giá trị cũ nếu chưa có dữ liệu mới nhưng cảm biến vẫn online
-        // Hoặc trả về valid = false tùy logic bạn muốn
         data.valid = false;
     }
     return data;
