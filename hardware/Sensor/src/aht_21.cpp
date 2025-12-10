@@ -21,7 +21,7 @@ AHTData readAHT()
         sensors_event_t humi, temp;
         aht.getEvent(&humi, &temp);
 
-        float tempOffset = -2.0; // Offset nhiệt độ
+        float tempOffset = -4.5;
         data.temperature = temp.temperature + tempOffset;
         data.humidity = humi.relative_humidity;
         data.valid = true;
