@@ -10,7 +10,8 @@ struct ENSData
     int eco2;
     bool valid;
 };
-
+extern ScioSense_ENS160 ens160;
+extern bool ens_ready;
 bool initENS();
 ENSData readENS();
 
