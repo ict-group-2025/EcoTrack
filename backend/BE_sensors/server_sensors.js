@@ -1,15 +1,11 @@
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
 
-// --- CẢNH BÁO BẢO MẬT ---
-// Bạn đã lỡ lộ mật khẩu trong ảnh. Hãy đổi mật khẩu Database ngay sau khi test xong!
-// -------------------------
-
 // 1. CẤU HÌNH
 const MQTT_BROKER = 'mqtt://broker.hivemq.com';
 const MQTT_TOPIC = 'ecotrack/sensors/data';
 
-// Sửa lại URI: Thêm tên database vào sau .net/ (Ví dụ: iot_database)
+// Sửa lại URI: Thêm tên database vào sau .net/ 
 const MONGO_URI = 'mongodb+srv://admin:Longpv.22ba13206@cluster0.aah4xok.mongodb.net/iot_database?retryWrites=true&w=majority&appName=Cluster0';
 
 // 2. SCHEMA
