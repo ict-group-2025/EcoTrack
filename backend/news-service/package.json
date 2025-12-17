@@ -1,0 +1,20 @@
+{
+  "name": "news-service",
+  "version": "1.0.0",
+  "description": "Backend thu thập và cung cấp tin tức thời tiết, sức khỏe, ô nhiễm không khí (Database + RSS)",
+  "main": "src/api/server.js",
+  "scripts": {
+    "dev": "node src/api/server.js",
+    "ingest": "node src/ingest/runIngest.js",
+    "init-db": "node src/db/init.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "js-yaml": "^4.1.0",
+    "pg": "^8.11.0",
+    "rss-parser": "^3.13.0",
+    "winston": "^3.13.0"
+  }
+}

@@ -1,0 +1,19 @@
+# Docker Compose chỉ chạy PostgreSQL.
+# Backend chạy bằng "npm run dev" trên máy để đơn giản và dễ debug.
+# => Không cần Dockerfile, không build app.
+
+services:
+  db:
+    image: postgres:15
+    container_name: news_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"        # mở cổng DB cho backend kết nối
+    volumes:
+      - db_data:/var/lib/postgresql/data  # lưu dữ liệu DB ra ổ đĩa
+
+volumes:
+  db_data:

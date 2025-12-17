@@ -1,0 +1,27 @@
+# ===============================
+# Danh sách nguồn RSS tin tức
+# Backend sẽ đọc file này để biết
+# cần lấy tin từ đâu
+# ===============================
+
+sources:
+  # -------------------------------
+  # Nguồn tin về Thời tiết
+  # -------------------------------
+  - name: "VnExpress Thời tiết"
+    category: "weather"
+    url: "https://vnexpress.net/rss/thoi-tiet.rss"
+
+  # -------------------------------
+  # Nguồn tin về Sức khỏe
+  # -------------------------------
+  - name: "VnExpress Sức khỏe"
+    category: "health"
+    url: "https://vnexpress.net/rss/suc-khoe.rss"
+
+  # -------------------------------
+  # Nguồn tin về Môi trường / Ô nhiễm
+  # -------------------------------
+  - name: "VnExpress Môi trường"
+    category: "air"
+    url: "https://vnexpress.net/rss/moi-truong.rss"
