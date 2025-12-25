@@ -1,245 +1,145 @@
+import 'package:eco_track/layout/weather/body_weather.dart';
+import 'package:eco_track/layout/weather/details_weather.dart';
+import 'package:eco_track/layout/weather/header_weather.dart';
+import 'package:eco_track/providers/weather_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/location_provider.dart';
 
 class WeatherScreen extends StatelessWidget {
   const WeatherScreen({super.key});
 
+  List<Color> _getWeatherColors(String? icon) {
+    if (icon == null || icon.isEmpty) {
+      return [const Color(0xFF5B6C7D), const Color(0xFF2D3E50)]; // Mặc định
+    }
+
+    final weatherCode = icon.length >= 2 ? icon.substring(0, 2) : icon;
+
+    switch (weatherCode) {
+      case '01': // Clear sky - Trời nắng/quang đãng
+        return icon.endsWith('d')
+            ? [
+                const Color(0xFF4A90E2),
+                const Color(0xFF50C9C3),
+              ] // Xanh dương sáng (ngày)
+            : [
+                const Color(0xFF0F2027),
+                const Color(0xFF203A43),
+              ]; // Xanh đậm (đêm)
+
+      case '02': // Few clouds - Ít mây
+        return icon.endsWith('d')
+            ? [
+                const Color(0xFF5B9BD5),
+                const Color(0xFF70C1B3),
+              ] // Xanh lam nhạt (ngày)
+            : [
+                const Color(0xFF1C3F51),
+                const Color(0xFF2C5F77),
+              ]; // Xanh navy (đêm)
+
+      case '03': // Scattered clouds - Mây rải rác
+      case '04': // Broken clouds - Nhiều mây
+        return [const Color(0xFF607D8B), const Color(0xFF455A64)]; // Xám xanh
+
+      case '09': // Shower rain - Mưa rào
+      case '10': // Rain - Mưa
+        return [const Color(0xFF536976), const Color(0xFF292E49)]; // Xám đen
+
+      case '11': // Thunderstorm - Giông bão
+        return [
+          const Color(0xFF373B44),
+          const Color(0xFF4286f4),
+        ]; // Đen xanh điện
+
+      case '13': // Snow - Tuyết
+        return [const Color(0xFFE0EAFC), const Color(0xFFCFDEF3)]; // Trắng xanh
+
+      case '50': // Mist/Fog - Sương mù
+        return [const Color(0xFF757F9A), const Color(0xFFD7DDE8)]; // Xám nhạt
+
+      default:
+        return [const Color(0xFF5B6C7D), const Color(0xFF2D3E50)]; // Mặc định
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF5B6C7D), Color(0xFF2D3E50)],
-        ),
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 30),
-              _buildCurrentWeather(),
-              const SizedBox(height: 20),
-              _buildHourlyForecast(),
-              const SizedBox(height: 20),
-              _buildWeeklyForecast(),
-              const SizedBox(height: 20),
-              _buildWeatherDetails(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Icon(Icons.menu, color: Colors.white),
-        Row(
-          children: const [
-            Icon(Icons.location_on, color: Colors.white, size: 20),
-            SizedBox(width: 5),
-            Text(
-              'Trương Định',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+    return Consumer2<LocationProvider, WeatherProvider>(
+      builder: (_, locationProvider, weatherProvider, __) {
+        // Hiển thị loading
+        if (locationProvider.position == null) {
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF5B6C7D), Color(0xFF2D3E50)],
+              ),
             ),
-          ],
-        ),
-        const Icon(Icons.more_vert, color: Colors.white),
-      ],
-    );
-  }
-
-  Widget _buildCurrentWeather() {
-    return Center(
-      child: Column(
-        children: const [
-          Icon(Icons.cloud, color: Colors.white, size: 100),
-          SizedBox(height: 10),
-          Text(
-            '21°',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 80,
-              fontWeight: FontWeight.w200,
-            ),
-          ),
-          Text(
-            'Sương mù',
-            style: TextStyle(color: Colors.white70, fontSize: 20),
-          ),
-          SizedBox(height: 5),
-          Text(
-            '23° / 20° • Cảm giác như 21°',
-            style: TextStyle(color: Colors.white60, fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHourlyForecast() {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Mưa phùn từ sáng sớm. Thấp 20 độ C.',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          const SizedBox(height: 15),
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: 7,
-              itemBuilder: (context, index) {
-                final hours = [
-                  '11 PM',
-                  '12 AM',
-                  '1 AM',
-                  '2 AM',
-                  '3 AM',
-                  '4 AM',
-                  '5 AM',
-                ];
-                final temps = ['21°', '21°', '21°', '21°', '21°', '21°', '21°'];
-                return Container(
-                  width: 60,
-                  margin: const EdgeInsets.only(right: 10),
-                  child: Column(
-                    children: [
-                      Text(
-                        hours[index],
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Icon(Icons.cloud, color: Colors.white70, size: 30),
-                      const SizedBox(height: 10),
-                      Text(
-                        temps[index],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWeeklyForecast() {
-    final days = ['Hôm nay', 'Thứ sáu', 'Thứ bảy', 'Chủ nhật', 'Thứ hai'];
-    final highs = ['23°', '24°', '23°', '19°', '22°'];
-    final lows = ['20°', '21°', '16°', '15°', '17°'];
-
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: List.generate(days.length, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    days[index],
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ),
-                const Icon(Icons.cloud, color: Colors.white70, size: 24),
-                const Spacer(),
-                Text(
-                  highs[index],
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
-                const SizedBox(width: 15),
-                Text(
-                  lows[index],
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
             ),
           );
-        }),
-      ),
-    );
-  }
+        }
 
-  Widget _buildWeatherDetails() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 15,
-      mainAxisSpacing: 15,
-      childAspectRatio: 1.3,
-      children: [
-        _buildDetailCard('Chỉ số UV', 'Thấp', Icons.wb_sunny),
-        _buildDetailCard('Độ ẩm', '85%', Icons.water_drop),
-        _buildDetailCard('Gió', '5 km/h', Icons.air),
-        _buildDetailCard('Hoàng hôn', '17:30', Icons.wb_twilight),
-      ],
-    );
-  }
+        final weather = weatherProvider.weather;
+        if (weather == null) {
+          return Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF5B6C7D), Color(0xFF2D3E50)],
+              ),
+            ),
+            child: const Center(
+              child: Text(
+                'Không lấy được dữ liệu thời tiết',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          );
+        }
 
-  Widget _buildDetailCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white70, size: 35),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        final locationName =
+            locationProvider.locationName ?? 'Đang xác định...';
+
+        String? weatherIcon;
+        try {
+          weatherIcon = weather.icon;
+        } catch (e) {
+          weatherIcon = null;
+        }
+
+        final gradientColors = _getWeatherColors(weatherIcon);
+
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: gradientColors, // Màu động theo thời tiết
             ),
           ),
-        ],
-      ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HeaderWeather(locationName: locationName),
+                  const SizedBox(height: 30),
+                  BodyWeather(weather: weather),
+                  const SizedBox(height: 20),
+                  DetailsWeather(weather: weather),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

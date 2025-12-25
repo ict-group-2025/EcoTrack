@@ -1,22 +1,20 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <WiFi.h>
-
-// Include module
 #include "bmp_280.h"
 #include "aht_21.h"
 #include "ens_160.h"
 #include "dust.h"
 #include "mqtt.h" 
 
-#define SDA_PIN 18
-#define SCL_PIN 19
+#define SDA_PIN 21
+#define SCL_PIN 22
 
 const char *ssid = "S20 FE 5G";
 const char *password = "68686868";
 
 unsigned long lastSend = 0;
-const unsigned long SEND_INTERVAL = 5000;
+const unsigned long SEND_INTERVAL = 10000;
 
 void setupWiFi()
 {
@@ -36,7 +34,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
 
   setupWiFi();
-  setupMQTT(); // <--- Gọi hàm từ file riêng
+  setupMQTT(); 
 
   Wire.begin(SDA_PIN, SCL_PIN);
 
@@ -51,15 +49,16 @@ void setup()
 
 void loop()
 {
-  loopMQTT(); // <--- Duy trì kết nối
+  loopMQTT();
 
   if (millis() - lastSend < SEND_INTERVAL)
     return;
   lastSend = millis();
+  float dustf = getD(20,25);
+       AHTData aht = readAHT();
 
-  // Đọc cảm biến
-  AHTData aht = readAHT();
-  BMPData bmp = readBMP();
+
+      BMPData bmp = readBMP();
 
   float t = aht.valid ? aht.temperature : 25.0;
   float h = aht.valid ? aht.humidity : 50.0;
@@ -67,13 +66,11 @@ void loop()
 
   float dust = readDustDensity();
 
-  // Đóng gói JSON
   char json[256];
   snprintf(json, sizeof(json),
-           "{\"temp\":%.2f,\"hum\":%.2f,\"pres\":%.2f,\"aqi\":%d,\"pm25\":%.1f}",
-           aht.temperature, aht.humidity, bmp.pressure, ens.aqi, dust);
+           "{\"temp1\":%.2f, \"altitude\":%.2f, \"temp2\":%.2f,\"hum\":%.2f,\"pres\":%.2f,\"aqi\":%d,\"pm25\":%.1f}",
+           bmp.temperature,bmp.altitude, aht.temperature, aht.humidity, bmp.pressure, ens.aqi, dust  );
 
-  // Gửi đi
   sendSensorDataMQTT(json); 
  
   digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));

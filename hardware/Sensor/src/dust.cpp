@@ -19,9 +19,15 @@ void initDust()
 
     smoothedDust = 0;
 }
+float getD(float i, float a)
+{
+    return i + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / (a - i)));
+}
+
 
 float readDustDensity()
 {
+   
     float rawSum = 0;
     int sampleCount = 10; 
 
@@ -40,7 +46,6 @@ float readDustDensity()
 
     float rawAvg = rawSum / sampleCount;
 
-    // Đổi sang Volt: 3.3V là điện áp tham chiếu, 4095 là độ phân giải 12-bit
     float voltage = rawAvg * (3.3 / 4095.0);
 
     float dustDensity = 0;

@@ -56,11 +56,11 @@ void sendSensorDataMQTT(const char *jsonBuffer)
     {
         client.publish(mqtt_topic, jsonBuffer);
 
-        Serial.print("📤 MQTT Sent: ");
+        Serial.print(" MQTT Sent: ");
         Serial.println(jsonBuffer);
     }
     else
     {
-        Serial.println("⚠️ MQTT Disconnected, skip sending.");
+        Serial.println(" MQTT Disconnected, skip sending.");
     }
 }
