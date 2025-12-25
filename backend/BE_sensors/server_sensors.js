@@ -1,13 +1,16 @@
+const express = require('express');
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
 
-// 1. CẤU HÌNH
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ================== CONFIG ==================
 const MQTT_BROKER = 'mqtt://broker.hivemq.com';
 const MQTT_TOPIC = 'ecotrack/sensors/data';
+const MONGO_URI = process.env.MONGO_URI; // ❗ ENV trên Render
 
-// Sửa lại URI: Thêm tên database vào sau .net/ 
-const MONGO_URI = 'mongodb+srv://admin:Longpv.22ba13206@cluster0.aah4xok.mongodb.net/iot_database?retryWrites=true&w=majority&appName=Cluster0';
-
+// ================== SCHEMA ==================
 const SensorSchema = new mongoose.Schema({
     location: { type: String, default: "Home_Hanoi" },
     temp: Number,
@@ -20,18 +23,30 @@ const SensorSchema = new mongoose.Schema({
 
 const SensorData = mongoose.model('SensorData', SensorSchema);
 
+// ================== HTTP SERVER ==================
+app.get('/', (req, res) => {
+    res.send('EcoTrack MQTT Server running 🚀');
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', time: new Date() });
+});
+
+app.listen(PORT, () => {
+    console.log(`🌐 HTTP server running on port ${PORT}`);
+});
+
+// ================== MAIN ==================
 async function startApp() {
     try {
-        console.log(' Đang kết nối MongoDB...');
-
+        console.log('🔌 Connecting MongoDB...');
         await mongoose.connect(MONGO_URI);
-        console.log(' KẾT NỐI MONGODB THÀNH CÔNG!');
+        console.log(' MongoDB connected');
 
         connectMQTT();
-
     } catch (err) {
-        console.error(' LỖI KẾT NỐI DATABASE (Kiểm tra lại IP Access trên Atlas):', err.message);
-        process.exit(1); // Dừng chương trình nếu không có DB
+        console.error(' MongoDB error:', err.message);
+        process.exit(1);
     }
 }
 
@@ -39,15 +54,13 @@ function connectMQTT() {
     const client = mqtt.connect(MQTT_BROKER);
 
     client.on('connect', () => {
-        console.log(' Đã kết nối HiveMQ, đang chờ dữ liệu...');
+        console.log('📡 Connected to HiveMQ');
         client.subscribe(MQTT_TOPIC);
     });
 
     client.on('message', async (topic, message) => {
-        const msgString = message.toString();
         try {
-            const data = JSON.parse(msgString);
-
+            const data = JSON.parse(message.toString());
             if (!data.temp && !data.pm25) return;
 
             const newData = new SensorData({
@@ -55,19 +68,18 @@ function connectMQTT() {
                 hum: data.hum,
                 pres: data.pres,
                 aqi: data.aqi,
-                pm25: data.pm25 || data['pm2.5'] // Xử lý nếu tên biến khác
+                pm25: data.pm25 || data['pm2.5']
             });
 
             await newData.save();
-            console.log(`[${new Date().toLocaleTimeString()}] Đã lưu`);
-
-        } catch (error) {
-            console.error(' Lỗi xử lý tin nhắn:', error.message);
+            console.log('💾 Data saved');
+        } catch (err) {
+            console.error(' MQTT parse error:', err.message);
         }
     });
 
-    client.on('error', (err) => {
-        console.error(' Lỗi MQTT:', err);
+    client.on('error', err => {
+        console.error(' MQTT error:', err.message);
     });
 }
 
