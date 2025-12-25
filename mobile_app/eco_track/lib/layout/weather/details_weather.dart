@@ -37,13 +37,13 @@ class DetailsWeather extends StatelessWidget {
     }
   }
 
-  String _getPressure() {
-    try {
-      return '${weather.pressure ?? 0} hPa';
-    } catch (e) {
-      return 'N/A';
-    }
-  }
+  // String _getPressure() {
+  //   try {
+  //     return '${weather.pressure ?? 0} hPa';
+  //   } catch (e) {
+  //     return 'N/A';
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
