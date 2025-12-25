@@ -1,12 +1,12 @@
+require('dotenv').config()
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
 
-// 1. CẤU HÌNH
-const MQTT_BROKER = 'mqtt://broker.hivemq.com';
-const MQTT_TOPIC = 'ecotrack/sensors/data';
+const MQTT_BROKER = process.env.MQTT_BROKER;
+const MQTT_TOPIC = process.env.MQTT_TOPIC;
 
 // Sửa lại URI: Thêm tên database vào sau .net/ 
-const MONGO_URI = 'mongodb+srv://admin:Longpv.22ba13206@cluster0.aah4xok.mongodb.net/iot_database?retryWrites=true&w=majority&appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI;
 
 const SensorSchema = new mongoose.Schema({
     location: { type: String, default: "Home_Hanoi" },
