@@ -1,16 +1,13 @@
-const express = require('express');
+require('dotenv').config()
 const mqtt = require('mqtt');
 const mongoose = require('mongoose');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const MQTT_BROKER = process.env.MQTT_BROKER;
+const MQTT_TOPIC = process.env.MQTT_TOPIC;
 
-// ================== CONFIG ==================
-const MQTT_BROKER = 'mqtt://broker.hivemq.com';
-const MQTT_TOPIC = 'ecotrack/sensors/data';
-const MONGO_URI = process.env.MONGO_URI; // ❗ ENV trên Render
+// Sửa lại URI: Thêm tên database vào sau .net/ 
+const MONGO_URI = process.env.MONGO_URI;
 
-// ================== SCHEMA ==================
 const SensorSchema = new mongoose.Schema({
     location: { type: String, default: "Home_Hanoi" },
     temp: Number,
