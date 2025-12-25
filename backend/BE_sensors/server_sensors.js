@@ -20,30 +20,18 @@ const SensorSchema = new mongoose.Schema({
 
 const SensorData = mongoose.model('SensorData', SensorSchema);
 
-// ================== HTTP SERVER ==================
-app.get('/', (req, res) => {
-    res.send('EcoTrack MQTT Server running 🚀');
-});
-
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK', time: new Date() });
-});
-
-app.listen(PORT, () => {
-    console.log(`🌐 HTTP server running on port ${PORT}`);
-});
-
-// ================== MAIN ==================
 async function startApp() {
     try {
-        console.log('🔌 Connecting MongoDB...');
+        console.log(' Đang kết nối MongoDB...');
+
         await mongoose.connect(MONGO_URI);
-        console.log(' MongoDB connected');
+        console.log(' KẾT NỐI MONGODB THÀNH CÔNG!');
 
         connectMQTT();
+
     } catch (err) {
-        console.error(' MongoDB error:', err.message);
-        process.exit(1);
+        console.error(' LỖI KẾT NỐI DATABASE (Kiểm tra lại IP Access trên Atlas):', err.message);
+        process.exit(1); // Dừng chương trình nếu không có DB
     }
 }
 
@@ -51,13 +39,15 @@ function connectMQTT() {
     const client = mqtt.connect(MQTT_BROKER);
 
     client.on('connect', () => {
-        console.log('📡 Connected to HiveMQ');
+        console.log(' Đã kết nối HiveMQ, đang chờ dữ liệu...');
         client.subscribe(MQTT_TOPIC);
     });
 
     client.on('message', async (topic, message) => {
+        const msgString = message.toString();
         try {
-            const data = JSON.parse(message.toString());
+            const data = JSON.parse(msgString);
+
             if (!data.temp && !data.pm25) return;
 
             const newData = new SensorData({
@@ -65,18 +55,19 @@ function connectMQTT() {
                 hum: data.hum,
                 pres: data.pres,
                 aqi: data.aqi,
-                pm25: data.pm25 || data['pm2.5']
+                pm25: data.pm25 || data['pm2.5'] // Xử lý nếu tên biến khác
             });
 
             await newData.save();
-            console.log('💾 Data saved');
-        } catch (err) {
-            console.error(' MQTT parse error:', err.message);
+            console.log(`[${new Date().toLocaleTimeString()}] Đã lưu`);
+
+        } catch (error) {
+            console.error(' Lỗi xử lý tin nhắn:', error.message);
         }
     });
 
-    client.on('error', err => {
-        console.error(' MQTT error:', err.message);
+    client.on('error', (err) => {
+        console.error(' Lỗi MQTT:', err);
     });
 }
 
