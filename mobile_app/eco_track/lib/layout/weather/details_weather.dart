@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class DetailsWeather extends StatelessWidget {
   final dynamic weather;
   const DetailsWeather({super.key, required this.weather});
 
-  // Helper methods để lấy giá trị an toàn
-  String _getFeelsLike() {
+  DateTime _getSunrise() {
     try {
-      return weather.feelsLike?.toStringAsFixed(1) ??
-          weather.temperature.toStringAsFixed(1);
+      return weather.sunrise;
     } catch (e) {
-      return 'N/A';
+      return DateTime.now();
+    }
+  }
+
+  DateTime _getSunset() {
+    try {
+      return weather.sunset;
+    } catch (e) {
+      return DateTime.now();
     }
   }
 
@@ -41,10 +48,33 @@ class DetailsWeather extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = [
-      {'title': 'Cảm giác', 'value': _getFeelsLike(), 'icon': Icons.thermostat},
-      {'title': 'Độ ẩm', 'value': _getHumidity(), 'icon': Icons.water_drop},
-      {'title': 'Gió', 'value': _getWindSpeed(), 'icon': Icons.air},
-      {'title': 'Áp suất', 'value': _getPressure(), 'icon': Icons.speed},
+      {
+        'title': 'Bình minh',
+        'value': _getSunrise(),
+        'icon': Icons.sunny,
+        'ic_color': Colors.amber[300],
+      },
+      {
+        'title': 'Hoàng hôn',
+        'value': _getSunset(),
+        'icon': Icons.sunny_snowing,
+        'ic_color': Colors.redAccent,
+      },
+      {
+        'title': 'Độ ẩm',
+        'value': _getHumidity(),
+        'icon': Icons.water_drop,
+        'ic_color': Colors.blue[500],
+      },
+      {
+        'title': 'Gió',
+        'value': _getWindSpeed(),
+        'icon': Icons.air,
+        'ic_color': Colors.white,
+      },
+      // {'title': 'Áp suất', 'value': _getPressure(), 'icon': Icons.air,
+      //   'ic_color': Colors.greenAccent,
+      // },
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,15 +96,21 @@ class DetailsWeather extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(d['icon'] as IconData, color: Colors.white70, size: 30),
+                  Icon(
+                    d['icon'] as IconData,
+                    color: d['ic_color'] as Color,
+                    size: 30,
+                  ),
                   const SizedBox(height: 8),
                   Text(
-                    d['title'] as String,
+                    d['title'].toString(),
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    d['value'] as String,
+                    d['value'] is DateTime
+                        ? DateFormat('HH:mm').format(d['value'] as DateTime)
+                        : d['value'].toString(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,

@@ -20,6 +20,9 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
+  int hour = DateTime.now().hour;
+  bool get isNight => hour < 6 || hour >= 18;
+
   @override
   void initState() {
     super.initState();
@@ -53,7 +56,10 @@ class _MainScreenState extends State<MainScreen> {
         context,
         listen: false,
       );
-      await weatherProvider.fetchWeatherByCoordinates(pos.latitude, pos.longitude);
+      await weatherProvider.fetchWeatherByCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
     } catch (e) {
       debugPrint('Error loading location: $e');
       if (mounted) {
@@ -126,19 +132,10 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: screens[_currentIndex],
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF2D2D2D),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
+        decoration: BoxDecoration(color: isNight ? Colors.black : Colors.white),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [

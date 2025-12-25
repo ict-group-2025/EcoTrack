@@ -36,10 +36,10 @@ class Weather {
 
     return Weather(
       cityName: json['name'] ?? 'Unknown',
-      temperature: (main['temp'] - 273.15 ?? 0).toDouble(),
-      tempMin: (main['temp_min'] - 273.15 ?? 0).toDouble(),
-      tempMax: (main['temp_max'] - 273.15 ?? 0).toDouble(),
-      feelsLike: (main['feels_like'] - 273.15 ?? 0).toDouble(),
+      temperature: ((main['temp'] ?? 0) - 273.15).toDouble(),
+      tempMin: ((main['temp_min'] ?? 0) - 273.15).toDouble(),
+      tempMax: ((main['temp_max'] ?? 0) - 273.15).toDouble(),
+      feelsLike: ((main['feels_like'] ?? 0) - 273.15).toDouble(),
       humidity: main['humidity'] ?? 0,
       pressure: main['pressure'] ?? 0,
       description: weather['description'] ?? '',
@@ -47,8 +47,12 @@ class Weather {
       windSpeed: (wind['speed'] ?? 0).toDouble(),
       sunrise: DateTime.fromMillisecondsSinceEpoch(
         (sys['sunrise'] ?? 0) * 1000,
-      ),
-      sunset: DateTime.fromMillisecondsSinceEpoch((sys['sunset'] ?? 0) * 1000),
+        isUtc: true,
+      ).toLocal(),
+      sunset: DateTime.fromMillisecondsSinceEpoch(
+        (sys['sunset'] ?? 0) * 1000,
+        isUtc: true,
+      ).toLocal(),
     );
   }
 

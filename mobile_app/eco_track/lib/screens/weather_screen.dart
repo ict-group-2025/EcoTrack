@@ -1,5 +1,7 @@
 import 'package:eco_track/layout/weather/body_weather.dart';
+import 'package:eco_track/layout/weather/daily_weather.dart';
 import 'package:eco_track/layout/weather/details_weather.dart';
+import 'package:eco_track/layout/weather/forest_weather.dart';
 import 'package:eco_track/layout/weather/header_weather.dart';
 import 'package:eco_track/providers/weather_provider.dart';
 import 'package:flutter/material.dart';
@@ -68,14 +70,23 @@ class WeatherScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<LocationProvider, WeatherProvider>(
       builder: (_, locationProvider, weatherProvider, __) {
+        final weather = weatherProvider.weather;
+        String? weatherIcon;
+        try {
+          weatherIcon = weather?.icon;
+        } catch (e) {
+          weatherIcon = null;
+        }
+
+        final gradientColors = _getWeatherColors(weatherIcon);
         // Hiển thị loading
         if (locationProvider.position == null) {
           return Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF5B6C7D), Color(0xFF2D3E50)],
+                colors: gradientColors,
               ),
             ),
             child: const Center(
@@ -84,14 +95,13 @@ class WeatherScreen extends StatelessWidget {
           );
         }
 
-        final weather = weatherProvider.weather;
         if (weather == null) {
           return Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF5B6C7D), Color(0xFF2D3E50)],
+                colors: gradientColors,
               ),
             ),
             child: const Center(
@@ -106,15 +116,6 @@ class WeatherScreen extends StatelessWidget {
         final locationName =
             locationProvider.locationName ?? 'Đang xác định...';
 
-        String? weatherIcon;
-        try {
-          weatherIcon = weather.icon;
-        } catch (e) {
-          weatherIcon = null;
-        }
-
-        final gradientColors = _getWeatherColors(weatherIcon);
-
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -127,12 +128,15 @@ class WeatherScreen extends StatelessWidget {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   HeaderWeather(locationName: locationName),
-                  const SizedBox(height: 30),
                   BodyWeather(weather: weather),
                   const SizedBox(height: 20),
+                  HourlyForecastWidget(),
+                  const SizedBox(height: 20),
+                  DailyWeather(),
+                  const SizedBox(height: 20),
+
                   DetailsWeather(weather: weather),
                 ],
               ),
