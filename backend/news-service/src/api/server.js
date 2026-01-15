@@ -1,4 +1,4 @@
-/*
+/* 
   News API – Phương án 2: DB + RSS
   Endpoints: /news, /news/:id, /search, /read, /subscribe, /devices, /notify-preview
   Scheduler: auto-ingest theo INGEST_INTERVAL_MINUTES (mặc định 5)
@@ -6,6 +6,7 @@
 
 require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 const { spawn } = require("child_process");
 const db = require("../lib/db");
 
@@ -13,13 +14,43 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /* -------- Middleware -------- */
+
+// ✅ CORS (để FE ở http://localhost:5173 gọi được BE :3000)
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Cho phép request không có Origin (Postman/curl/server-to-server)
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false,
+  })
+);
+
+// ✅ xử lý preflight
+app.options("*", cors());
+
 // JSON (kể cả application/*+json) + giữ rawBody để debug khi cần
-app.use(express.json({
-  type: ["application/json", "application/*+json"],
-  verify: (req, _res, buf) => { req.rawBody = buf?.toString() || ""; }
-}));
+app.use(
+  express.json({
+    type: ["application/json", "application/*+json"],
+    verify: (req, _res, buf) => {
+      req.rawBody = buf?.toString() || "";
+    },
+  })
+);
+
 // Hỗ trợ x-www-form-urlencoded (lỡ chọn nhầm tab trong Postman)
 app.use(express.urlencoded({ extended: false }));
+
 // Bắt lỗi JSON parse -> 400
 app.use((err, _req, res, next) => {
   if (err && err.type === "entity.parse.failed") {
@@ -39,7 +70,11 @@ function parsePaging(qPage, qLimit, defLimit = 10, maxLimit = 50) {
 }
 function getPayload(req) {
   if (req && typeof req.body === "string" && req.body.trim().startsWith("{")) {
-    try { return JSON.parse(req.body); } catch { return {}; }
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      return {};
+    }
   }
   return req?.body || {};
 }
@@ -57,8 +92,14 @@ app.get("/news", async (req, res) => {
       WHERE archived_at IS NULL
     `;
     const p = [];
-    if (category) { p.push(category); sql += ` AND category = $${p.length}`; }
-    if (location) { p.push(location); sql += ` AND location = $${p.length}`; }
+    if (category) {
+      p.push(category);
+      sql += ` AND category = $${p.length}`;
+    }
+    if (location) {
+      p.push(location);
+      sql += ` AND location = $${p.length}`;
+    }
     p.push(L, O);
     sql += `
       ORDER BY published_at DESC NULLS LAST, created_at DESC, id DESC
@@ -228,9 +269,18 @@ function startIngestOnce() {
   if (isIngesting) return;
   isIngesting = true;
   console.log("[Scheduler] Start ingest job...");
-  const child = spawn(process.execPath, ["src/ingest/runIngest.js"], { stdio: "inherit", env: process.env });
-  child.on("exit", (code) => { console.log(`[Scheduler] Ingest finished with code ${code}.`); isIngesting = false; });
-  child.on("error", (err) => { console.error("[Scheduler] Failed to start ingest:", err.message); isIngesting = false; });
+  const child = spawn(process.execPath, ["src/ingest/runIngest.js"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+  child.on("exit", (code) => {
+    console.log(`[Scheduler] Ingest finished with code ${code}.`);
+    isIngesting = false;
+  });
+  child.on("error", (err) => {
+    console.error("[Scheduler] Failed to start ingest:", err.message);
+    isIngesting = false;
+  });
 }
 const INTERVAL_MIN = parseInt(process.env.INGEST_INTERVAL_MINUTES || "5", 10) || 5;
 setInterval(startIngestOnce, Math.max(INTERVAL_MIN, 1) * 60 * 1000);
