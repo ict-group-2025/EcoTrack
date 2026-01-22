@@ -2,170 +2,294 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Weather & Chat Demo</title>
+    <title>Weather App Backend Tester</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
     <style>
-        .chat-box { height: 400px; overflow-y: scroll; border: 1px solid #ccc; padding: 10px; background: #f9f9f9; }
-        .message { margin-bottom: 10px; padding: 5px; border-radius: 5px; }
-        .my-msg { background-color: #d1e7dd; text-align: right; }
-        .other-msg { background-color: #f8d7da; }
+        .chat-box { height: 300px; overflow-y: scroll; border: 1px solid #dee2e6; padding: 10px; background: #fff; position: relative; }
+        .token-display { font-size: 0.8em; word-break: break-all; max-height: 50px; overflow-y: auto; }
+        .context-menu {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            min-width: 150px;
+        }
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .context-menu-item:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-light p-4" onclick="hideContextMenu()">
 
-<div class="container mt-4">
+<!-- Context Menu -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-item text-warning" onclick="menuAction('warn')">⚠️ Warn User</div>
+    <div class="context-menu-item text-danger" onclick="menuAction('ban')">🚫 Ban User</div>
+    <div class="context-menu-item text-success" onclick="menuAction('unban')">✅ Unban User</div>
+    <hr class="m-0">
+    <div class="context-menu-item text-danger" onclick="menuAction('delete')">🗑️ Delete Msg</div>
+</div>
+
+<div class="container">
+    <!-- ... Rest of HTML (Keep Auth, Weather Sections same, just updating script interactions) ... -->
+    
+    <!-- (Assuming previous HTML structure exists, focusing on Script updates) -->
+    <!-- Re-inserting the previous HTML structure for completeness since we are replacing a large chunk or could be specific -->
+    <!-- For safety, better to use replace logic on specific parts if file is large, but index.html is small enough to rewrite safely if needed. -->
+    
+    <!-- Let's assume standard replacement of body content isn't efficient. I will target the script and css addition specifically. -->
+    <!-- Wait, I am replacing lines. The previous 'view_file' showed index.html. I will stick to adding the style in head and the menu div in body, then updating script. -->
+    
+    <!-- ACTUALLY, I will replace the WHOLE content to be safe and clean. -->
+    
+    <h2 class="mb-4 text-center">🛠️ Backend Tester Dashboard</h2>
+
+    <!-- AUTH SECTION -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning">🔐 1. Authentication (Bắt buộc)</div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" id="loginUser" class="form-control" placeholder="Username (e.g. admin)">
+                </div>
+                <div class="col-md-5">
+                    <input type="password" id="loginPass" class="form-control" placeholder="Password (e.g. 123456)">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" onclick="login()">Login</button>
+                </div>
+            </div>
+            <div id="authInfo" class="mt-2 d-none">
+                <div class="alert alert-success">
+                    <strong>Logged in as:</strong> <span id="displayUser"></span> | 
+                    <strong>Role:</strong> <span id="displayRole"></span>
+                    <div class="token-display text-muted mt-1" id="jwtToken"></div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-md-5">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">Tra cứu Thời tiết</div>
+        <!-- WEATHER SECTION -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">🌤️ 2. Weather & Forecast</div>
                 <div class="card-body">
                     <div class="input-group mb-3">
-                        <input type="text" id="cityInput" class="form-control" placeholder="Nhập tên thành phố (vd: Hanoi)">
-                        <button class="btn btn-dark" onclick="searchCity()">Tra cứu</button>
+                        <input type="text" id="cityInput" class="form-control" placeholder="City name (e.g. Hanoi)">
+                        <button class="btn btn-secondary" onclick="getWeather()">Get Current</button>
+                        <button class="btn btn-success" onclick="getForecast()">Get 5-Day Forecast</button>
+                    </div>
+                    
+                    <!-- Weather Display UI -->
+                    <div id="weatherDisplay" class="d-none">
+                        <h3 id="cityName">--</h3>
+                        <h1 class="display-4"><span id="temp">--</span>°C</h1>
+                        <p class="lead" id="desc">--</p>
+                        <div class="alert alert-warning" id="adviceBox">
+                            💡 <strong>Lời khuyên:</strong> <span id="adviceText">--</span>
+                        </div>
+                        <p><strong>Humidity:</strong> <span id="humidity">--</span>% | <strong>Wind:</strong> <span id="wind">--</span> m/s</p>
+                        <hr>
                     </div>
 
-                    <div id="weatherResult" class="d-none">
-                        <h3 id="cityName">--</h3>
-                        <p>Quốc gia: <span id="country">--</span></p>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <h1><span id="temp">--</span>°C</h1>
-                                <p id="desc">--</p>
-                            </div>
-                            <div class="col-6">
-                                <img id="icon" src="" style="width: 80px;">
-                            </div>
-                        </div>
-                        <hr>
-                        <p>Độ ẩm: <span id="humidity">--</span>%</p>
-                        <p>Gió: <span id="wind">--</span> m/s</p>
-                        <p>Ô nhiễm (CO): <span id="co">--</span></p>
+                    <div id="weatherResult" class="border p-2 bg-white" style="min-height: 100px; max-height: 200px; overflow-y: auto;">
+                        <span class="text-muted">Raw JSON will appear here...</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-7">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    Thảo luận: <span id="chatRoomName">Chưa chọn thành phố</span>
-                </div>
+        <!-- CHAT SECTION -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">💬 3. Chat (Right-Click for Admin)</div>
                 <div class="card-body">
-                    <div id="chatArea" class="chat-box mb-3">
-                        <div class="text-center text-muted">Hãy tìm kiếm thành phố để tham gia chat!</div>
+                    <div class="input-group mb-2">
+                        <input type="number" id="chatLocationId" class="form-control" placeholder="Location ID (e.g. 1)">
+                        <button class="btn btn-outline-secondary" onclick="connectChat()">Connect WS</button>
                     </div>
+                    <div id="chatBox" class="chat-box mb-2"></div>
                     <div class="input-group">
-                        <input type="text" id="username" class="form-control" placeholder="Tên bạn..." style="max-width: 150px;">
-                        <input type="text" id="message" class="form-control" placeholder="Nhập tin nhắn..." disabled>
-                        <button id="sendBtn" class="btn btn-success" onclick="sendMessage()" disabled>Gửi</button>
+                        <input type="text" id="chatMsg" class="form-control" placeholder="Message...">
+                        <button class="btn btn-primary" onclick="sendMsg()">Send</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <div id="adminActionStatus" class="mt-3 text-center fw-bold"></div>
 </div>
 
 <script>
+    let token = localStorage.getItem("jwt_token");
     let stompClient = null;
-    let currentLocationId = null;
+    let selectedMsgData = null; // Store data for context menu
 
-    // 1. HÀM TRA CỨU THỜI TIẾT
-    function searchCity() {
-        let city = $("#cityInput").val();
-        if(!city) return alert("Vui lòng nhập tên thành phố!");
+    if (token) showLoggedInState();
 
-        $.get("http://localhost:8080/api/weather/search?city=" + city, function(data) {
-            // Hiển thị dữ liệu thời tiết
-            $("#weatherResult").removeClass("d-none");
-            $("#cityName").text(data.cityName);
-            $("#country").text(data.country);
-            $("#temp").text(data.temperature);
-            $("#desc").text(data.weatherDescription);
-            $("#humidity").text(data.humidity);
-            $("#wind").text(data.windSpeed);
-            $("#co").text(data.co);
-            $("#icon").attr("src", "http://openweathermap.org/img/wn/" + data.weatherIcon + "@2x.png");
+    // --- CONTEXT MENU LOGIC ---
+    function showContextMenu(e, userId, commentId) {
+        e.preventDefault();
+        selectedMsgData = { userId: userId, commentId: commentId }; // Note: commentId not yet in ChatMessage, might need to add if Delete is by ID.
+        // For simplicity, let's assume we Warn/Ban User first. Delete requires Comment ID which we might not have in ChatMessage yet unless we map it. 
+        // Let's rely on User Actions first. 
+        
+        let menu = document.getElementById("contextMenu");
+        menu.style.display = "block";
+        menu.style.left = e.pageX + "px";
+        menu.style.top = e.pageY + "px";
+    }
 
-            // KÍCH HOẠT CHAT CHO THÀNH PHỐ NÀY
-            connectChat(data.locationId, data.cityName);
-        }).fail(function() {
-            alert("Không tìm thấy thành phố hoặc lỗi Server!");
+    function hideContextMenu() {
+        document.getElementById("contextMenu").style.display = "none";
+    }
+
+    function menuAction(action) {
+        if (!selectedMsgData || !selectedMsgData.userId) return alert("No User ID found!");
+        let uid = selectedMsgData.userId;
+        let url = "";
+        
+        if (action === 'warn') url = `/api/admin/users/${uid}/warn`;
+        if (action === 'ban') url = `/api/admin/users/${uid}/ban`;
+        if (action === 'unban') url = `/api/admin/users/${uid}/unban`; // Custom endpoint added
+        
+        // Example Delete (needs comment ID, logic placeholder)
+        if (action === 'delete') return alert("Delete functionality requires Comment ID mapping update.");
+
+        if (url) {
+            $.ajax({
+                url: url,
+                type: "POST",
+                headers: getAuthHeaders(),
+                success: function(resp) {
+                    $("#adminActionStatus").text("✅ Success: " + resp).addClass("text-success").removeClass("text-danger");
+                },
+                error: function(xhr) {
+                    $("#adminActionStatus").text("❌ Error: " + xhr.responseText).addClass("text-danger").removeClass("text-success");
+                }
+            });
+        }
+    }
+
+    // --- AUTH ---
+    function login() {
+        let u = $("#loginUser").val();
+        let p = $("#loginPass").val();
+        $.ajax({
+            url: "/auth/login", type: "POST", contentType: "application/json",
+            data: JSON.stringify({ username: u, password: p }),
+            success: function(resp) {
+                token = resp.token;
+                localStorage.setItem("jwt_token", token);
+                localStorage.setItem("user_info", JSON.stringify(resp));
+                showLoggedInState();
+            },
+            error: function(xhr) { alert("Login Failed: " + xhr.responseText); }
         });
     }
 
-    // 2. KẾT NỐI WEBSOCKET
-    function connectChat(locationId, cityName) {
-        if (currentLocationId === locationId) return; // Đang ở đúng phòng rồi thì thôi
-        currentLocationId = locationId;
+    function logout() {
+        localStorage.removeItem("jwt_token");
+        location.reload();
+    }
 
-        // Ngắt kết nối cũ nếu có
-        if (stompClient !== null) stompClient.disconnect();
+    function showLoggedInState() {
+        $("#authInfo").removeClass("d-none");
+        $("#jwtToken").text(token);
+        let info = JSON.parse(localStorage.getItem("user_info") || "{}");
+        $("#displayUser").text(info.username);
+        $("#displayRole").text(info.role);
+    }
+    
+    function getAuthHeaders() { return { "Authorization": "Bearer " + token }; }
 
-        // Cập nhật giao diện
-        $("#chatRoomName").text(cityName);
-        $("#chatArea").html('<div class="text-center text-success">Đang kết nối vào phòng ' + cityName + '...</div>');
-        $("#message").prop("disabled", false);
-        $("#sendBtn").prop("disabled", false);
+    // --- WEATHER ---
+    function getWeather() {
+        let city = $("#cityInput").val();
+        $.ajax({
+            url: "/api/weather/search?city=" + city, headers: getAuthHeaders(),
+            success: function(data) {
+                // Show Raw JSON
+                $("#weatherResult").html(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                
+                // Update UI Elements
+                $("#weatherDisplay").removeClass("d-none");
+                $("#cityName").text(data.city);
+                $("#temp").text(data.temperature);
+                $("#desc").text(data.weatherDescription);
+                $("#humidity").text(data.humidity);
+                $("#wind").text(data.windSpeed);
+                
+                // Show Advice
+                if(data.advice) {
+                    $("#adviceText").text(data.advice);
+                    $("#adviceBox").removeClass("d-none");
+                } else {
+                    $("#adviceBox").addClass("d-none");
+                }
 
-        // Kết nối mới
+                // Auto-fill Location ID for Chat
+                $("#chatLocationId").val(data.locationId);
+            },
+            error: function(xhr) { $("#weatherResult").html(xhr.responseText); }
+        });
+    }
+    
+    function getForecast() {
+        $.ajax({
+            url: "/api/weather/forecast/" + $("#cityInput").val(), headers: getAuthHeaders(),
+            success: function(data) { alert("Forecast Loaded!"); console.log(data); },
+            error: function(xhr) { $("#weatherResult").html(xhr.responseText); }
+        });
+    }
+
+    // --- CHAT ---
+    function connectChat() {
+        let locId = $("#chatLocationId").val();
+        if (!locId) return alert("Enter Location ID");
         let socket = new SockJS('/chat-websocket');
         stompClient = Stomp.over(socket);
-
-        stompClient.connect({}, function (frame) {
-            console.log('Connected: ' + frame);
-
-            // Xóa thông báo đang kết nối
-            $("#chatArea").html('');
-
-            // A. Tải lịch sử chat cũ
-            loadHistory(locationId);
-
-            // B. Đăng ký nhận tin nhắn mới Realtime
-            stompClient.subscribe('/topic/' + locationId, function (messageOutput) {
-                showMessage(JSON.parse(messageOutput.body));
+        stompClient.connect({}, function() {
+            $("#chatBox").append(`<div class="text-success">Connected!</div>`);
+            stompClient.subscribe("/topic/" + locId, function(msg) {
+                let body = JSON.parse(msg.body);
+                // Extract userId if available (assumes backend sends it)
+                let uid = body.userId || 0; 
+                let group = body.userLocation ? ` <small class='text-muted'>(${body.userLocation})</small>` : "";
+                
+                let html = `<div oncontextmenu="showContextMenu(event, ${uid}, 0)" style="cursor:context-menu">
+                                <strong>${body.sender}${group}:</strong> ${body.content}
+                            </div>`;
+                $("#chatBox").append(html);
             });
         });
     }
 
-    // 3. TẢI LỊCH SỬ TIN NHẮN
-    function loadHistory(locationId) {
-        $.get("http://localhost:8080/api/chat/history/" + locationId, function(messages) {
-            messages.forEach(msg => showMessage(msg));
-        });
-    }
-
-    // 4. GỬI TIN NHẮN
-    function sendMessage() {
-        let text = $("#message").val();
-        let user = $("#username").val() || "Ẩn danh"; // Nếu chưa nhập tên thì là Ẩn danh
-
-        if(text && stompClient) {
-            stompClient.send("/app/chat/" + currentLocationId + "/sendMessage", {},
-                JSON.stringify({'sender': user, 'content': text, 'type': 'CHAT'})
-            );
-            $("#message").val(""); // Xóa ô nhập
-        } else {
-            alert("Vui lòng nhập tên và tin nhắn!");
+    function sendMsg() {
+        let locId = $("#chatLocationId").val();
+        let content = $("#chatMsg").val();
+        let info = JSON.parse(localStorage.getItem("user_info") || "{}");
+        if(stompClient && content) {
+            stompClient.send("/app/chat/" + locId + "/sendMessage", {}, JSON.stringify({
+                sender: info.username || "Anon",
+                content: content,
+                type: 'CHAT'
+            }));
+            $("#chatMsg").val("");
         }
     }
-
-    // 5. HIỂN THỊ TIN NHẮN LÊN MÀN HÌNH
-    function showMessage(msg) {
-        let currentUser = $("#username").val() || "Ẩn danh";
-        let isMe = msg.sender === currentUser;
-        let html = `
-            <div class="message ${isMe ? 'my-msg' : 'other-msg'}">
-                <strong>${msg.sender}:</strong> ${msg.content}
-            </div>
-        `;
-        $("#chatArea").append(html);
-        // Tự cuộn xuống dưới cùng
-        $("#chatArea").scrollTop($("#chatArea")[0].scrollHeight);
-    }
 </script>
-
 </body>
 </html>

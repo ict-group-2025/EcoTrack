@@ -1,4 +1,5 @@
 package com.usth.model;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ChatMessage {
     private String sender;
+    private Long userId;
+    private String userLocation;
     private String content;
     private String type;
 }

@@ -13,18 +13,21 @@ public class WeatherResponse {
     private String country;
 
     // 2. Thông tin thời tiết (Weather API)
-    private Double temperature;      // Nhiệt độ
-    private Double humidity;         // Độ ẩm (QUAN TRỌNG)
-    private Double pressure;         // Áp suất (QUAN TRỌNG)
-    private Double windSpeed;        // Tốc độ gió
+    private Double temperature; // Nhiệt độ
+    private Double humidity; // Độ ẩm (QUAN TRỌNG)
+    private Double pressure; // Áp suất (QUAN TRỌNG)
+    private Double windSpeed; // Tốc độ gió
     private String weatherDescription; // Mô tả (VD: Mây rải rác)
-    private String weatherIcon;      // Icon ảnh
+    private String weatherIcon; // Icon ảnh
 
     // 3. Thông tin ô nhiễm (Air Pollution API)
-    private Double co;   // Khí CO
-    private Double no2;  // Khí NO2
-    private Double so2;  // Khí SO2
+    private Double co; // Khí CO
+    private Double no2; // Khí NO2
+    private Double so2; // Khí SO2
 
     // 4. Thời gian cập nhật
     private LocalDateTime recordedAt;
+
+    // 5. Lời khuyên (AI/Rule-based)
+    private String advice;
 }

@@ -1,7 +1,5 @@
 package com.usth.entity;
 
-import com.usth.entity.ApiData;
-import com.usth.entity.Sensor;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

@@ -3,6 +3,7 @@ package com.usth.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
+import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
@@ -22,6 +23,23 @@ public class User {
 
     @Column(nullable = false)
     private String fullName;
+    private String userLocation; // Thành phố nơi user sống
+
+    @Column(nullable = false)
+    @JsonIgnore
+    private String password;
+
+    @Column(columnDefinition = "VARCHAR(255) DEFAULT 'USER'")
+    @Builder.Default
+    private String role = "USER";
+
+    @Builder.Default
+    private int warningCount = 0;
+    @Builder.Default
+    private int banCount = 0;
+    private LocalDateTime banExpiration;
+    @Builder.Default
+    private boolean isBanned = false;
 
     // Một User có thể comment nhiều lần
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

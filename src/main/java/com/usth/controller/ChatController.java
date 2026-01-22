@@ -1,10 +1,9 @@
 package com.usth.controller;
 
-import com.usth.entity.Comment;
 import com.usth.model.ChatMessage;
-import com.usth.repository.CommentRepository;
 import com.usth.service.ChatService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -15,21 +14,27 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
 
     private final ChatService chatService;
-    private final CommentRepository commentRepository; // Thêm cái này để lấy lịch sử
 
-    // 1 WebSocket: Nhận tin nhắn mới và bắn Realtime (Giữ nguyên)
+    // 1 WebSocket: Nhận tin nhắn mới và bắn Realtime
     @MessageMapping("/chat/{locationId}/sendMessage")
     @SendTo("/topic/{locationId}")
     public ChatMessage sendMessage(@DestinationVariable String locationId, @Payload ChatMessage chatMessage) {
-        return chatService.saveComment(locationId, chatMessage);
+        try {
+            if (chatMessage == null || chatMessage.getContent() == null || chatMessage.getContent().trim().isEmpty()) {
+                log.warn("Tin nhắn rỗng từ locationId: {}", locationId);
+                return null;
+            }
+            return chatService.saveComment(locationId, chatMessage);
+        } catch (Exception e) {
+            log.error("Lỗi khi lưu tin nhắn từ locationId {}: {}", locationId, e.getMessage());
+            return null;
+        }
     }
 
     @MessageMapping("/chat/{locationId}/addUser")
@@ -40,21 +45,17 @@ public class ChatController {
         return chatMessage;
     }
 
-    // 2 REST API: Lấy danh sách bình luận cũ
+    // 2 REST API: Lấy danh sách bình luận cũ (có pagination để tối ưu)
     @GetMapping("/api/chat/history/{locationId}")
-    @ResponseBody // Trả về JSON
-    public ResponseEntity<List<ChatMessage>> getChatHistory(@PathVariable Long locationId) {
-        List<Comment> comments = commentRepository.findByLocationId(locationId);
-
-        // Chuyển đổi từ Entity Comment sang Model ChatMessage để Frontend dễ hiển thị
-        List<ChatMessage> history = comments.stream().map(comment -> {
-            ChatMessage msg = new ChatMessage();
-            msg.setSender(comment.getUser().getUsername()); // Lấy tên người dùng
-            msg.setContent(comment.getContent());
-            msg.setType("CHAT");
-            return msg;
-        }).collect(Collectors.toList());
-
-        return ResponseEntity.ok(history);
+    @ResponseBody
+    public ResponseEntity<?> getChatHistory(
+            @PathVariable Long locationId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "50") int size) {
+        try {
+            return ResponseEntity.ok(chatService.getChatHistory(locationId, page, size));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
+        }
     }
 }
