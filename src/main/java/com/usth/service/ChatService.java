@@ -3,7 +3,7 @@ package com.usth.service;
 import com.usth.entity.Comment;
 import com.usth.entity.Location;
 import com.usth.entity.User;
-import com.usth.model.ChatMessage;
+import com.usth.dto.ChatMessage;
 import com.usth.repository.CommentRepository;
 import com.usth.repository.LocationRepository;
 import com.usth.repository.UserRepository;

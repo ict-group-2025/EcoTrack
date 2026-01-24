@@ -1,6 +1,6 @@
 package com.usth.controller;
 
-import com.usth.model.ChatMessage;
+import com.usth.dto.ChatMessage;
 import com.usth.service.ChatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

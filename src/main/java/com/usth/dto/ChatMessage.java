@@ -1,4 +1,4 @@
-package com.usth.model;
+package com.usth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

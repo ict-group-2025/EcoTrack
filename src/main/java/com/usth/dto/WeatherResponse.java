@@ -17,8 +17,12 @@ public class WeatherResponse {
     private Double humidity; // Độ ẩm (QUAN TRỌNG)
     private Double pressure; // Áp suất (QUAN TRỌNG)
     private Double windSpeed; // Tốc độ gió
+    private String weatherMain; // Tóm tắt (Rain, Clouds...) -> QUAN TRỌNG cho Frontend
     private String weatherDescription; // Mô tả (VD: Mây rải rác)
     private String weatherIcon; // Icon ảnh
+
+    private Double lat;
+    private Double lon;
 
     // 3. Thông tin ô nhiễm (Air Pollution API)
     private Double co; // Khí CO
@@ -30,4 +34,7 @@ public class WeatherResponse {
 
     // 5. Lời khuyên (AI/Rule-based)
     private String advice;
+
+    // 6. Cảnh báo nguy hiểm (Early Warning)
+    private String warning;
 }

@@ -25,6 +25,8 @@ public class User {
     private String fullName;
     private String userLocation; // Thành phố nơi user sống
 
+    private String email;
+
     @Column(nullable = false)
     @JsonIgnore
     private String password;

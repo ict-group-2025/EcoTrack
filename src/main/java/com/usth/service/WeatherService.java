@@ -227,8 +227,11 @@ public class WeatherService {
                     .humidity(apiData.getHumidity())
                     .pressure(apiData.getPressure())
                     .windSpeed(apiData.getWindSpeed())
+                    .weatherMain(apiData.getWeatherMain()) // Map weatherMain
                     .weatherDescription(apiData.getWeatherDescription())
                     .weatherIcon(apiData.getWeatherIcon())
+                    .lat(location.getLatitude()) // Map Lat
+                    .lon(location.getLongitude()) // Map Lon
                     .co(apiData.getCo())
                     .no2(apiData.getNo2())
                     .recordedAt(apiData.getRecordedAt());
@@ -236,9 +239,34 @@ public class WeatherService {
             // Tạo lời khuyên
             String advice = generateAdvice(apiData);
             builder.advice(advice);
+
+            // Tạo cảnh báo (Nếu có)
+            String warning = generateWarning(apiData);
+            builder.warning(warning);
         }
 
         return builder.build();
+    }
+
+    private String generateWarning(ApiData data) {
+        // Trả về null nếu không có cảnh báo nguy hiểm
+        String main = data.getWeatherMain().toLowerCase();
+        double temp = data.getTemperatureApi();
+
+        if (main.contains("thunderstorm") || main.contains("tornado")) {
+            return "NGUY HIỂM: Đang có bão hoặc lốc xoáy! Hạn chế ra khỏi nhà.";
+        }
+        if (temp > 38) {
+            return "CẢNH BÁO NHIỆT ĐỘ: Nắng nóng cực đoan (>38°C). Nguy cơ sốc nhiệt!";
+        }
+        if (temp < 5) {
+            return "CẢNH BÁO RÉT HẠI: Nhiệt độ xuống thấp (<5°C).";
+        }
+        if (data.getCo() != null && data.getCo() > 3000) {
+            return "CẢNH BÁO Ô NHIỄM: Chỉ số CO cực cao, không khí nguy hại!";
+        }
+
+        return null; // An toàn
     }
 
     private String generateAdvice(ApiData data) {

@@ -79,6 +79,37 @@
         </div>
     </div>
 
+    <!-- ANALYTICS DASHBOARD (ADMIN ONLY) -->
+    <div id="adminDashboard" class="card mb-4 border-primary d-none">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold">📊 Admin Analytics Dashboard</span>
+            <button class="btn btn-sm btn-light text-primary" onclick="loadStats()">🔄 Refresh</button>
+        </div>
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light">
+                        <h5>👥 Total Users</h5>
+                        <h2 id="statsUsers" class="text-primary fw-bold">--</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light">
+                        <h5>💬 Total Messages</h5>
+                        <h2 id="statsMsgs" class="text-success fw-bold">--</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 border rounded bg-light">
+                        <h5>🔥 Top Location</h5>
+                        <h4 id="statsTopLoc" class="text-danger fw-bold">--</h4>
+                        <small id="statsTopLocCount" class="text-muted">-- msgs</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- WEATHER SECTION -->
         <div class="col-md-6">
@@ -96,6 +127,12 @@
                         <h3 id="cityName">--</h3>
                         <h1 class="display-4"><span id="temp">--</span>°C</h1>
                         <p class="lead" id="desc">--</p>
+                        
+                        <!-- Warning Box -->
+                        <div class="alert alert-danger d-none" id="warningBox">
+                            🚨 <strong>CẢNH BÁO:</strong> <span id="warningText">--</span>
+                        </div>
+
                         <div class="alert alert-warning" id="adviceBox">
                             💡 <strong>Lời khuyên:</strong> <span id="adviceText">--</span>
                         </div>
@@ -211,9 +248,36 @@
         let info = JSON.parse(localStorage.getItem("user_info") || "{}");
         $("#displayUser").text(info.username);
         $("#displayRole").text(info.role);
+        
+        // Show/Load Admin Dashboard if role is ADMIN
+        if (info.role === "ROLE_ADMIN") {
+            $("#adminDashboard").removeClass("d-none");
+            loadStats();
+        } else {
+            $("#adminDashboard").addClass("d-none");
+        }
     }
     
     function getAuthHeaders() { return { "Authorization": "Bearer " + token }; }
+
+    // --- ANALYTICS ---
+    function loadStats() {
+        $.ajax({
+            url: "/api/admin/stats",
+            headers: getAuthHeaders(),
+            success: function(data) {
+                $("#statsUsers").text(data.totalUsers);
+                $("#statsMsgs").text(data.totalMessages);
+                $("#statsTopLoc").text(data.topLocation);
+                $("#statsTopLocCount").text(data.topLocationMsgCount + " msgs");
+            },
+            error: function(xhr) {
+                console.error("Stats Error:", xhr.responseText);
+                // Fail silently or show neat error
+                $("#statsUsers").text("Err");
+            }
+        });
+    }
 
     // --- WEATHER ---
     function getWeather() {
@@ -232,6 +296,14 @@
                 $("#humidity").text(data.humidity);
                 $("#wind").text(data.windSpeed);
                 
+                // Show Warning (Priority)
+                if(data.warning) {
+                    $("#warningText").text(data.warning);
+                    $("#warningBox").removeClass("d-none");
+                } else {
+                    $("#warningBox").addClass("d-none");
+                }
+
                 // Show Advice
                 if(data.advice) {
                     $("#adviceText").text(data.advice);

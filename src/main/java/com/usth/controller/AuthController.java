@@ -28,6 +28,7 @@ public class AuthController {
 
         @PostMapping("/login")
         public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+                System.out.println(">>> LOGIN ATTEMPT: " + loginRequest.getUsername()); // DEBUG LOG
 
                 Authentication authentication = authenticationManager.authenticate(
                                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
@@ -61,6 +62,7 @@ public class AuthController {
                                 .fullName(signUpRequest.getFullName())
                                 .password(encoder.encode(signUpRequest.getPassword()))
                                 .userLocation(signUpRequest.getUserLocation()) // Lưu location
+                                .email(signUpRequest.getEmail()) // Set email from request
                                 .role("USER")
                                 .build();
 
