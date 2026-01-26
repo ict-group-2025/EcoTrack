@@ -45,7 +45,8 @@ public class AuthController {
                                 user.getId(),
                                 user.getUsername(),
                                 user.getFullName(),
-                                user.getRole()));
+                                user.getRole(),
+                                user.getAvatarId()));
         }
 
         @PostMapping("/register")
@@ -68,7 +69,20 @@ public class AuthController {
 
                 userRepository.save(user);
 
-                return ResponseEntity.ok("User registered successfully!");
+                // Auto-login after registration: Generate JWT token
+                Authentication authentication = authenticationManager.authenticate(
+                                new UsernamePasswordAuthenticationToken(signUpRequest.getUsername(),
+                                                signUpRequest.getPassword()));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+                String jwt = jwtUtils.generateJwtToken(authentication);
+
+                return ResponseEntity.ok(new JwtResponse(jwt,
+                                user.getId(),
+                                user.getUsername(),
+                                user.getFullName(),
+                                user.getRole(),
+                                user.getAvatarId()));
         }
 
         @GetMapping("/me")
@@ -84,5 +98,28 @@ public class AuthController {
                 User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
 
                 return ResponseEntity.ok(user);
+        }
+
+        @PutMapping("/avatar")
+        public ResponseEntity<?> updateAvatar(@RequestBody java.util.Map<String, Integer> request) {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                if (authentication == null || !authentication.isAuthenticated()
+                                || authentication.getPrincipal().equals("anonymousUser")) {
+                        return ResponseEntity.badRequest().body("Not authenticated");
+                }
+
+                Integer avatarId = request.get("avatarId");
+                if (avatarId == null || avatarId < 1 || avatarId > 10) {
+                        return ResponseEntity.badRequest().body("Invalid avatarId. Must be between 1 and 10.");
+                }
+
+                org.springframework.security.core.userdetails.User userDetails = (org.springframework.security.core.userdetails.User) authentication
+                                .getPrincipal();
+                User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+
+                user.setAvatarId(avatarId);
+                userRepository.save(user);
+
+                return ResponseEntity.ok(java.util.Map.of("success", true, "avatarId", avatarId));
         }
 }

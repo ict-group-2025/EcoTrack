@@ -90,6 +90,7 @@ public class ChatService {
 
             chatMessage.setUserId(user.getId());
             chatMessage.setUserLocation(user.getUserLocation()); // Trả về location của user
+            chatMessage.setAvatarId(user.getAvatarId()); // Avatar ID
             return chatMessage;
         } catch (IllegalArgumentException e) {
             log.error("Lỗi validation khi lưu comment: {}", e.getMessage());
@@ -111,8 +112,10 @@ public class ChatService {
                 msg.setSender(comment.getUser().getUsername());
                 msg.setUserId(comment.getUser().getId());
                 msg.setUserLocation(comment.getUser().getUserLocation()); // Map location
+                msg.setAvatarId(comment.getUser().getAvatarId()); // Avatar ID
             } else {
                 msg.setSender("Unknown");
+                msg.setAvatarId(1); // Default avatar
             }
             msg.setContent(comment.getContent());
             msg.setType("CHAT");

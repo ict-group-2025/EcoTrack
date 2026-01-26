@@ -43,6 +43,9 @@ public class User {
     @Builder.Default
     private boolean isBanned = false;
 
+    @Builder.Default
+    private Integer avatarId = 1; // Avatar ID (1-10)
+
     // Một User có thể comment nhiều lần
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @JsonIgnore // Tránh vòng lặp vô tận khi xuất JSON

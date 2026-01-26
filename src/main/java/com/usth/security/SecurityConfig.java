@@ -51,8 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/weather/**").permitAll() // Cho phép API Weather (Public)
                         .requestMatchers("/api/admin/stats").hasRole("ADMIN") // Chỉ Admin xem thống kê
                         .requestMatchers("/ws/**").permitAll() // Cho phép WebSocket bắt tay
-                        .requestMatchers("/", "/index.html", "/css/**", "/js/**").permitAll() // Cho phép Static
-                                                                                              // resources
+                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/avatars/**").permitAll() // Static
+                                                                                                             // resources
                         .anyRequest().authenticated() // Còn lại phải đăng nhập
                 );
 
