@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll() // Cho phép API Auth
                         .requestMatchers("/api/weather/**").permitAll() // Cho phép API Weather (Public)
+                        .requestMatchers("/api/news/**").permitAll() // Cho phép API News (Public)
                         .requestMatchers("/api/admin/stats").hasRole("ADMIN") // Chỉ Admin xem thống kê
                         .requestMatchers("/ws/**").permitAll() // Cho phép WebSocket bắt tay
                         .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/avatars/**").permitAll() // Static
